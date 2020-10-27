@@ -43,8 +43,8 @@ normalize <- function(x) {
 # @param y A numeric vector.
 # @param n Create a square n by n grid to compute density.
 # @return The density within each square.
-get_density <- function(x, y, ...) {
-  dens <- MASS::kde2d(x, y, ...)
+get_density <- function(x, y, n=100, ...) {
+  dens <- MASS::kde2d(x, y, n=n, ...)
   ix <- findInterval(x, dens$x)
   iy <- findInterval(y, dens$y)
   ii <- cbind(ix, iy)
@@ -54,19 +54,20 @@ get_density <- function(x, y, ...) {
 
 read_amber <- function(pdb, lr) {
   fn = paste(pdb, '_', lr, '_u_stats.txt', sep='')
-  print(paste('reading from', fn))
-  dat.amber <- read.table(fn)
+  print(paste('AMBER: reading from', fn))
+  dat.amber <- read.table(fn, na.strings=c('na', 'NA'))
   names(dat.amber) <- c('pdb', 'stdev', 'lr', 'type', 'conf', 'a', 'b', 'c', 'd', 'e', 'crmsd', 'ucrmsd', 'amber.energy', 'cvc.energy')
   dat.amber$type = 'Amber'
   dat.amber$stdev = ''
   dat.amber <- remove_outliers(dat.amber, 'cvc.energy')
-  dat.amber$density = get_density(dat.amber$cvc.energy, dat.amber$crmsd, n = 100)
-  dat.amber$udensity = get_density(dat.amber$cvc.energy, dat.amber$ucrmsd, n = 100)
+  print(summary(dat.amber))
+  dat.amber$density = get_density(dat.amber$cvc.energy, dat.amber$crmsd)
+  dat.amber$udensity = get_density(dat.amber$cvc.energy, dat.amber$ucrmsd)
   dat.amber
 }
 read_prody <- function(pdb, lr, r) {
   fn = paste('r',r,'_', pdb, '_', lr, '_u.prot_en_crmsd.txt', sep='')
-  print(paste('reading from', fn))
+  print(paste('PRODY: reading from', fn))
   dat.prody <- read.table(fn)
   names(dat.prody) <- c('conf', 'cvc.energy', 'amber.energy', 'crmsd', 'ucrmsd', 'pd.rmsd')
   dat.prody$lr = lr
@@ -75,13 +76,13 @@ read_prody <- function(pdb, lr, r) {
   dat.prody$pdb = pdb
   dat.prody <- remove_outliers(dat.prody, 'cvc.energy')
   print(summary(dat.prody))
-  dat.prody$density = get_density(dat.prody$cvc.energy, dat.prody$crmsd, n = 100)
-  dat.prody$udensity = get_density(dat.prody$cvc.energy, dat.prody$ucrmsd, n = 100)
+  dat.prody$density = get_density(dat.prody$cvc.energy, dat.prody$crmsd)
+  dat.prody$udensity = get_density(dat.prody$cvc.energy, dat.prody$ucrmsd)
   dat.prody
 }
 read_mine <- function(pdb, lr, stdev=5) {
   fn = paste('hp.5.s',stdev,'-',pdb,'_', lr, '_u-conv.prot_en_ll.txt', sep='')
-  print(paste('reading from', fn))
+  print(paste('vMRSHD: reading from', fn))
   dat.mine <- read.table(fn)
   names(dat.mine) <- c('conf', 'a','b','c', 'crmsd', 'ucrmsd', 'amber.energy', 'cvc.energy')
   dat.mine$type = 'vMRSHD'
@@ -91,8 +92,8 @@ read_mine <- function(pdb, lr, stdev=5) {
   print(summary(dat.mine))
   dat.mine <- dat.mine[dat.mine$conf <= 1000 | dat.mine$conf == 9999,]
   dat.mine <- remove_outliers(dat.mine, 'cvc.energy')
-  dat.mine$density = get_density(dat.mine$cvc.energy, dat.mine$crmsd, n = 100)
-  dat.mine$udensity = get_density(dat.mine$cvc.energy, dat.mine$ucrmsd, n = 100)
+  dat.mine$density = get_density(dat.mine$cvc.energy, dat.mine$crmsd)
+  dat.mine$udensity = get_density(dat.mine$cvc.energy, dat.mine$ucrmsd)
   dat.mine
 }
 
@@ -130,6 +131,7 @@ load_dat <- function() {
   dat$norm <- 'sample'
   dat[dat$conf == "9999","norm"] <- "original"
   dat$lr = ifelse(dat$lr=='l', 'ligand', 'receptor')
+  dat$pdb = as.character(dat$pdb)
 
   # Add some data for the bound energy values.
   en.singles <- read.table("singles.energy.txt")
@@ -208,11 +210,43 @@ plots <- function() {
 
   #datpub <- dat %>% filter((pdb=='1H1V' & lr=='ligand') | (pdb=='1F6M' & lr=='receptor'), stdev %in% c('', 'rmsd=5', 'rmsd=50', 'stdev=5', 'stdev=50'))
   datpub <- dat %>% filter(pdb=='1H1V', stdev %in% c('', 'rmsd=5', 'rmsd=50', 'stdev=5', 'stdev=50'))
-  datpub$label=paste(datpub$type, datpub$stdev)
+  my_label_parsed <- function (variable, value) {
+    require(plyr)
+    if (variable == "lr") {
+      return(as.character(value))
+    } else {
+      llply(as.character(value), function(x) parse(text = x))
+    }
+  }
+
+  # Change the label here so we can use 'labeller=label_parsed' and it will give
+  # us actual sigmas.
+  datpub$label <- factor(paste(datpub$type, datpub$stdev),
+                         levels=c(
+                    'Amber ',
+                    'ProDy rmsd=5',
+                    'ProDy rmsd=50',
+                    'vMRSHD stdev=5',
+                    'vMRSHD stdev=50'),
+                         labels=c(
+                    'Amber',
+                    'ProDy ~~ rmsd==5',
+                    'ProDy ~~ rmsd==50',
+                    'vMRSHD ~~ sigma==5',
+                    'vMRSHD ~~ sigma==50'))
   datpub$label2=paste(datpub$pdb, datpub$lr, sep=': ')
   #q <- datpub %>% filter(pdb=='1H1V', !(dat$conf %in% c(-1, 9999))) %>% ggplot(aes(cvc.energy/1000, crmsd)) + geom_bin2d(bins=50) + facet_wrap(lr~label, scales='free', ncol=5) + scale_fill_distiller(palette = "Spectral", direction=-1, trans='log') + geom_point(dat=datpub[datpub$pdb == '1H1V' & datpub$norm == "original",], aes(cvc.energy/1000, crmsd), pch=4, size=2, stroke=1, col='red') + theme(legend.position = "none") + xlab('Energy (kJ)') + ylab('iRMSD') + scale_x_continuous(n.breaks=4)
-  q <- datpub %>% filter(pdb=='1H1V', !(conf %in% c(-1, 9999))) %>% ggplot(aes(cvc.energy/1000, crmsd)) + geom_point(aes(color=density), size=0.5) + facet_wrap(lr~label, scales='free', ncol=5) + scale_color_distiller(palette = "Spectral", direction=-1, trans='log') + geom_point(dat=datpub[datpub$pdb == '1H1V' & datpub$norm == "original",], aes(cvc.energy/1000, crmsd), pch=4, size=2, stroke=1, col='red') + theme(legend.position = "none") + xlab('Energy (kJ)') + ylab('iRMSD') + scale_x_continuous(n.breaks=4)
-  ggsave("1H1V_vs_amber_prody.pdf", q, width=8, height=4)
+  q <- datpub %>% filter(pdb=='1H1V', !(conf %in% c(-1, 9999))) %>% ggplot(aes(cvc.energy/1000, crmsd)) + geom_point(aes(color=density), size=0.5) + facet_wrap(lr~label, scales='free', ncol=5, labeller=label_parsed) + scale_color_distiller(palette = "Spectral", direction=-1, trans='log') + geom_point(dat=datpub[datpub$pdb == '1H1V' & datpub$norm == "original",], aes(cvc.energy/1000, crmsd), pch=4, size=2, stroke=1, col='red') + theme(legend.position = "none") + xlab('Energy (kJ)') + ylab('iRMSD') + scale_x_continuous(n.breaks=4)
+  ggsave("1H1V_vs_amber_prody.pdf", q, width=10, height=5)
+
+  datpub <- dat %>% filter((pdb=='1H1V' & lr=='ligand') | (pdb=='1F6M' & lr=='receptor'), stdev %in% c('', 'rmsd=5', 'rmsd=50', 'stdev=5', 'stdev=50'))
+  datpub$label2=paste(datpub$pdb, datpub$lr, sep=': ')
+  q <- datpub %>% filter(!(conf %in% c(-1, 9999))) %>% ggplot(aes(cvc.energy/1000, crmsd)) +
+    geom_point(aes(color=density), size=0.5) +
+    facet_wrap(lr~label, scales='free', ncol=5, labeller=label_parsed) +
+    scale_color_distiller(palette = "Spectral", direction=-1, trans='log') +
+    geom_point(dat=datpub[datpub$norm == "original",], aes(cvc.energy/1000, crmsd), pch=4, size=2, stroke=1, col='red') + theme(legend.position = "none") + xlab('Energy (kJ)') + ylab('iRMSD') + scale_x_continuous(n.breaks=4)
+  ggsave("both_vs_amber_prody.pdf", q, width=8, height=4)
 
   do.call(rbind, apply(unique(dat[,c("type", "stdev", 'pdb','lr')]), 1,
                        function(x) {
@@ -269,6 +303,7 @@ plots <- function() {
 
 do_some_summarize <- function() {
   library(dplyr)
+  require(tidyr)
   # For table in paper with min/max/avg/Delta
   dat.full %>% group_by(pdb, lr, type, stdev) %>% mutate(orig.crmsd=crmsd[conf==9999]) %>% filter(!(conf %in% c(-1, 9999)), (pdb=='1H1V' & lr=='ligand') | (pdb=='1F6M' & lr=='receptor')) %>% summarize(min=min(crmsd), max=max(crmsd), avg=mean(crmsd), delta=min(orig.crmsd)-min(crmsd)) %>% print(n=30)
   # For table of prob certificates.
@@ -285,9 +320,10 @@ do_some_summarize <- function() {
         ) %>% print(n=30)
 
   # An even better plot.
-  p <- c(0.99, 0.90, 0.50, 0.10, 0.05, 0.01)
-  dat.full %>% group_by(pdb, lr, type, stdev) %>% filter(!(conf %in% c(-1, 9999)), (pdb=='1H1V' & lr=='ligand') | (pdb=='1F6M' & lr=='receptor')) %>% summarize(quants=list(quantile(crmsd, p))) %>% unnest_wider(quants)
-}
+  options(width = 160)
+  p <- c(0.90, 0.50, 0.10, 0.05, 0.01, 0.005)
+  dat.full %>% group_by(pdb, lr, type, stdev) %>% filter(!(conf == -1), (pdb=='1H1V' & lr=='ligand') | (pdb=='1F6M' & lr=='receptor')) %>% summarize(orig=min(crmsd[conf == 9999]), quants=list(quantile(crmsd[conf != 9999], p)), min=min(crmsd[conf != 9999])) %>% unnest_wider(quants) %>% print(width=100)
+} 
 
 
 # Generate something like this:
