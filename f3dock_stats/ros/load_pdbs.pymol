@@ -1,0 +1,98 @@
+load bound.out.pdb
+load 1BKD.out.tog_01054.pdb, dock_4.out_0001
+
+select cont_gold_r, bound.out & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+select cont_test_r, dock_4.out_0001 & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+
+align bound.out & cont_gold_r, dock_4.out_0001 & cont_test_r
+
+
+
+load bound.out_0010.pdb
+select cont_gold_r_t, bound.out_0010  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0010 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0011.pdb
+select cont_gold_r_t, bound.out_0011  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0011 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0012.pdb
+select cont_gold_r_t, bound.out_0012  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0012 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0013.pdb
+select cont_gold_r_t, bound.out_0013  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0013 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0014.pdb
+select cont_gold_r_t, bound.out_0014  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0014 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0015.pdb
+select cont_gold_r_t, bound.out_0015  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0015 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0016.pdb
+select cont_gold_r_t, bound.out_0016  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0016 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0017.pdb
+select cont_gold_r_t, bound.out_0017  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0017 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0018.pdb
+select cont_gold_r_t, bound.out_0018  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0018 & cont_gold_r_t, bound.out & cont_gold_r
+
+load bound.out_0019.pdb
+select cont_gold_r_t, bound.out_0019  & n. ca & (chain R & resi 191+199+202-207+209-210+213+216-231+263-280+299-308+311+323-344+354-355+358-359+362+397-406+408-409+414-415)
+align bound.out_0019 & cont_gold_r_t, bound.out & cont_gold_r
+
+load 1BKD.out.tog_01050.pdb
+load 1BKD.out.tog_01051.pdb
+load 1BKD.out.tog_01052.pdb
+load 1BKD.out.tog_01053.pdb
+load 1BKD.out.tog_01054.pdb
+load 1BKD.out.tog_01055.pdb
+load 1BKD.out.tog_01056.pdb
+load 1BKD.out.tog_01057.pdb
+load 1BKD.out.tog_01058.pdb
+load 1BKD.out.tog_01059.pdb
+
+group 1BKD.out, 1BKD.out.tog*
+group bound, bound.out*
+
+load unbound.out_0010.pdb
+select cont_gold_r_t, unbound.out_0010  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0010 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0011.pdb
+select cont_gold_r_t, unbound.out_0011  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0011 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0012.pdb
+select cont_gold_r_t, unbound.out_0012  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0012 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0013.pdb
+select cont_gold_r_t, unbound.out_0013  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0013 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0014.pdb
+select cont_gold_r_t, unbound.out_0014  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0014 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0015.pdb
+select cont_gold_r_t, unbound.out_0015  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0015 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0016.pdb
+select cont_gold_r_t, unbound.out_0016  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0016 & cont_gold_r_t, bound.out & cont_gold_r
+
+load unbound.out_0017.pdb
+select cont_gold_r_t, unbound.out_0017  & n. ca & (chain R & resi 214+222+225-230+232-233+236+239-254+286-303+322-331+334+346-367+377-378+381-382+385+420-429+431-432+437-438)
+align unbound.out_0017 & cont_gold_r_t, bound.out & cont_gold_r
+
+
+group unbound, unbound.out*

@@ -1,3 +1,5 @@
+require(ggplot2)
+
 dat.r.halton <- read.table('hp.5.s5-1F6M_r_u-prng.stats')
 names(dat.r.halton) <- c('i','j','dist', 'd.energy', 'd.crmsd')
 dat.r.halton$method = 'halton'
@@ -23,7 +25,9 @@ ggplot(dat[dat$dist > 0,], aes(x=dist, y=abs(d.energy))) + stat_density2d(aes(fi
 
 
 read_stats_table <- function(pdb, lr, hp, s=5) {
-  dat <- read.table(paste('hp.', hp, '.s', s, '-', pdb, '_', lr, '_u-both.stats', sep=''), h=T)
+  fn <- paste('hp.', hp, '.s', s, '-', pdb, '_', lr, '_u-both.stats', sep='')
+  print(paste('reading from', fn))
+  dat <- read.table(fn, h=T)
   dat$lr = lr
   dat$pdb = pdb
   dat$hp = hp
@@ -39,38 +43,53 @@ read_new_stats <- function(pdb, lr, hp, type, s) {
   dat$type = type
   dat
 }
-## dat.full.1BKD.l <- read_stats_table('1BKD', 'l', 5)
-## dat.full.1BKD.r <- read_stats_table('1BKD', 'r', 5)
-## dat.full.1ATN.l <- read_stats_table('1ATN', 'l', 5)
-## dat.full.1ATN.r <- read_stats_table('1ATN', 'r', 5)
-## dat.full.1ATN.18.l <- read_stats_table('1ATN', 'l', 18)
-## dat.full.1ATN.18.r <- read_stats_table('1ATN', 'r', 18)
-## dat.full.1F6M.l <- read_stats_table('1F6M', 'l', 5)
-## dat.full.1F6M.r <- read_stats_table('1F6M', 'r', 5)
-## dat.full <- rbind(dat.full.1F6M.r, dat.full.1F6M.l, dat.full.1ATN.l, dat.full.1ATN.r, dat.full.1BKD.l, dat.full.1BKD.r, dat.full.1ATN.18.r, dat.full.1ATN.18.l)
-dat.full <- NULL
-#for (s in c(-1, 5, 50)) {
-for (s in c(50)) {
-  for (i in c(5, 10, 15, 20, 25, 30)) {
-    for (lr in c('l', 'r')) {
-      for (type in c('halton', 'prng')) {
-        print(paste('reading', s, i))
-        if (is.null(dat.full)) {
-          #dat.full <- read_stats_table('1ATN', 'r', i)
-          dat.full <- read_new_stats('1ATN', lr, i, type, s)
-        } else {
-          #dat.full <- rbind(dat.full, read_stats_table('1ATN', 'r', i))
-          dat.full <- rbind(dat.full, read_new_stats('1ATN', lr, i, type, s))
+
+dofs <- data.frame(hp=c(5, 10, 15, 20, 25, 30),
+                   dofs=c(21, 44, 78, 110, 137, 153))
+do_old_stats <- function() {
+  #dat.full.1BKD.l <- read_stats_table('1BKD', 'l', 5)
+  #dat.full.1BKD.r <- read_stats_table('1BKD', 'r', 5)
+  #dat.full.1ATN.l <- read_stats_table('1ATN', 'l', 5)
+  #dat.full.1ATN.r <- read_stats_table('1ATN', 'r', 5)
+  #dat.full.1ATN.18.l <- read_stats_table('1ATN', 'l', 18)
+  #dat.full.1ATN.18.r <- read_stats_table('1ATN', 'r', 18)
+  #dat.full.1F6M.l <- read_stats_table('1F6M', 'l', 5)
+  #dat.full.1F6M.r <- read_stats_table('1F6M', 'r', 5)
+  #dat.full <- rbind(dat.full.1F6M.r, dat.full.1F6M.l, dat.full.1ATN.l, dat.full.1ATN.r, dat.full.1BKD.l, dat.full.1BKD.r, dat.full.1ATN.18.r, dat.full.1ATN.18.l)
+  #dat.full <- rbind(dat.full.1ATN.l, dat.full.1ATN.r, dat.full.1ATN.18.r, dat.full.1ATN.18.l)
+  dat.full <- read_stats_table('1ATN', 'r', 5)
+  dat.full <- rbind(dat.full, read_stats_table('1ATN', 'r', 15))
+  dat.full <- rbind(dat.full, read_stats_table('1ATN', 'r', 30))
+  merge(dat.full, dofs)
+}
+
+do_new_stats <- function() {
+  dat.full <- NULL
+  #for (s in c(-1, 5, 50)) {
+  for (s in c(50)) {
+    for (i in c(5, 10, 15, 20, 25, 30)) {
+      for (lr in c('l', 'r')) {
+        for (type in c('halton', 'prng')) {
+          print(paste('reading', s, i))
+          if (is.null(dat.full)) {
+            #dat.full <- read_stats_table('1ATN', 'r', i)
+            dat.full <- read_new_stats('1ATN', lr, i, type, s)
+          } else {
+            #dat.full <- rbind(dat.full, read_stats_table('1ATN', 'r', i))
+            dat.full <- rbind(dat.full, read_new_stats('1ATN', lr, i, type, s))
+          }
         }
       }
     }
   }
+  merge(dat.full, dofs)
 }
-dofs <- data.frame(hp=c(5, 10, 15, 20, 25, 30),
-                   dofs=c(21, 44, 78, 110, 137, 153))
-dat.full <- merge(dat.full, dofs)
+#dat.full <- do_new_stats()
+dat.full <- do_old_stats()
 
 add_swapped <- function(dd) {
+  print(paste('swapping, with rows at', nrow(dd)))
+  print(summary(dd))
   dswap <- data.frame(i=dd$j, j=dd$i,
                       ii=dd$jj, jj=dd$ii,
                       i.energy=dd$j.energy, j.energy=dd$i.energy,
@@ -80,6 +99,8 @@ add_swapped <- function(dd) {
                       d.crmsd=-dd$d.crmsd,
                       type.1=dd$type.2, type.2=dd$type.1,
                       pdb=dd$pdb, lr=dd$lr, hp=dd$hp, dofs=dd$dofs)
+  print(names(dswap))
+  
   if ('types' %in% names(dd)) {
     dswap$types <- paste(as.character(dswap$type.1), as.character(dswap$type.2))
   }
@@ -157,41 +178,6 @@ dat.by.i <- dfapply(unique(dat.full$pdb), function(pdb) {
     })
   })
 })
-hp_limiters <- c(5, 15, 30)
-dat.by.i.maxmin <- dfapply(unique(dat.full$pdb), function(pdb) {
-  dh.pdb <- add_swapped(dat.full[dat.full$pdb == pdb &
-                                 dat.full$hp %in% hp_limiters &
-                                 dat.full$types %in% c('p p', 'h h'),])
-  print(paste("--", pdb, nrow(dh.pdb), "--"))
-  dfapply(unique(dh.pdb$hp), function(hp) {
-  dfapply(unique(dh.pdb$lr), function(lr) {
-    dh.lr <- dh.pdb[dh.pdb$lr == lr & dh.pdb$hp == hp,];
-    dfapply(unique(dh.lr$types), function(type) {
-      dh.type <- dh.lr[dh.lr$types == type,];
-      # Remove outliers
-      outs <- num_outside(dh.type[dh.type$j == 0, 'i.energy'], m_iqr=5)
-      print(paste(pdb, lr, type, hp, 'rows', nrow(dh.type), 'outliers', paste(outs, collapse=' ')))
-      dh.type <- dh.type[dh.type$i.energy > outs[1] & dh.type$i.energy < outs[2] &
-                         dh.type$j.energy > outs[1] & dh.type$j.energy < outs[2],]
-      dfapply(unique(dh.type$i), function(i) {
-        data.frame(dist.min=min(abs(dh.type[dh.type$i == i, 'dist'])),
-                   dist.max=max(abs(dh.type[dh.type$i == i, 'dist'])),
-                   energy.min=min(abs(dh.type[dh.type$i == i, 'd.energy'])),
-                   energy.max=max(abs(dh.type[dh.type$i == i, 'd.energy'])),
-                   crmsd.min=min(abs(dh.type[dh.type$i == i, 'd.crmsd'])),
-                   crmsd.max=max(abs(dh.type[dh.type$i == i, 'd.crmsd'])),
-                   dist.9=ifelse(i == 9999, 0, dh.type[dh.type$i == i & dh.type$j == 9999, 'dist']),
-                   d.energy.9=ifelse(i == 9999, 0, dh.type[dh.type$i == i & dh.type$j == 9999, 'd.energy']),
-                   crmsd=unique(dh.type[dh.type$i == i, 'i.crmsd']),
-                   energy=unique(dh.type[dh.type$i == i, 'i.energy']),
-                   types=type, lr=lr, pdb=pdb, i=i, hp=hp)
-      })
-    })
-  })
-  })
-})
-dat.by.i.maxmin <- merge(dat.by.i.maxmin, dofs)
-dat.by.i.maxmin$ltypes <- ifelse(dat.by.i.maxmin$types == 'p p', 'prng', 'halton')
 
 e_boltzman <- function(df, pdb, lr, type) {
   k <- 1.380649e-23
@@ -201,21 +187,60 @@ e_boltzman <- function(df, pdb, lr, type) {
   sum(exp(-en / k / T))
 }
 
-# Then can do the following plot:
-ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h'),], aes(log(energy.min), energy.max, color=types)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(lr~pdb, scales='free')
-# Actually, this is pretty good... shows high spread for halton at small
-# dimensions, but higher for prng at higher dimensions. (note: this is just for
-# 1ATN)
-ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h'),], aes(energy.min, energy.max, color=types)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(hp+lr~pdb, scales='free') + scale_x_log10() + geom_point(data=dat.by.i.maxmin[dat.by.i.maxmin$i==9999 & dat.by.i.maxmin$types %in% c('p p', 'h h'),], pch=17, size=5)
-q <- ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h') & dat.by.i.maxmin$lr=='r',], aes(energy.min/1000, energy.max/1000, color=types)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(.~dofs, scales='free') + ylab('max energy diff (kJ)') + xlab('min energy diff (kJ)') + scale_x_log10() + labs(color='Generator') + scale_color_discrete(labels=c('prng', 'halton'))
-ggsave("discr_min_v_max_energy_1ATN.pdf", q, width=9, height=5)
-dof_lab <- function(string) {
-  paste("dim:", string)
+create_diss_plot <- function() {
+  dat.full <- do_old_stats()
+  dat.full$types <- paste(as.character(dat.full$type.1),as.character(dat.full$type.2))
+  hp_limiters <- c(5, 15, 30)
+  dat.by.i.maxmin <- dfapply(unique(dat.full$pdb), function(pdb) {
+    dh.pdb <- add_swapped(dat.full[dat.full$pdb == pdb &
+                                   dat.full$hp %in% hp_limiters &
+                                   dat.full$types %in% c('p p', 'h h'),])
+    print(paste("--", pdb, nrow(dh.pdb), "--"))
+    dfapply(unique(dh.pdb$hp), function(hp) {
+    dfapply(unique(dh.pdb$lr), function(lr) {
+      dh.lr <- dh.pdb[dh.pdb$lr == lr & dh.pdb$hp == hp,];
+      dfapply(unique(dh.lr$types), function(type) {
+        dh.type <- dh.lr[dh.lr$types == type,];
+        # Remove outliers
+        outs <- num_outside(dh.type[dh.type$j == 0, 'i.energy'], m_iqr=5)
+        print(paste(pdb, lr, type, hp, 'rows', nrow(dh.type), 'outliers', paste(outs, collapse=' ')))
+        dh.type <- dh.type[dh.type$i.energy > outs[1] & dh.type$i.energy < outs[2] &
+                           dh.type$j.energy > outs[1] & dh.type$j.energy < outs[2],]
+        dfapply(unique(dh.type$i), function(i) {
+          data.frame(dist.min=min(abs(dh.type[dh.type$i == i, 'dist'])),
+                     dist.max=max(abs(dh.type[dh.type$i == i, 'dist'])),
+                     energy.min=min(abs(dh.type[dh.type$i == i, 'd.energy'])),
+                     energy.max=max(abs(dh.type[dh.type$i == i, 'd.energy'])),
+                     crmsd.min=min(abs(dh.type[dh.type$i == i, 'd.crmsd'])),
+                     crmsd.max=max(abs(dh.type[dh.type$i == i, 'd.crmsd'])),
+                     dist.9=ifelse(i == 9999, 0, dh.type[dh.type$i == i & dh.type$j == 9999, 'dist']),
+                     d.energy.9=ifelse(i == 9999, 0, dh.type[dh.type$i == i & dh.type$j == 9999, 'd.energy']),
+                     crmsd=unique(dh.type[dh.type$i == i, 'i.crmsd']),
+                     energy=unique(dh.type[dh.type$i == i, 'i.energy']),
+                     types=type, lr=lr, pdb=pdb, i=i, hp=hp)
+        })
+      })
+    })
+    })
+  })
+
+  # Then can do the following plot:
+  ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h'),], aes(log(energy.min), energy.max, color=types)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(lr~pdb, scales='free')
+  # Actually, this is pretty good... shows high spread for halton at small
+  # dimensions, but higher for prng at higher dimensions. (note: this is just for
+  # 1ATN)
+  ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h'),], aes(energy.min, energy.max, color=types)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(hp+lr~pdb, scales='free') + scale_x_log10() + geom_point(data=dat.by.i.maxmin[dat.by.i.maxmin$i==9999 & dat.by.i.maxmin$types %in% c('p p', 'h h'),], pch=17, size=5)
+  q <- ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h') & dat.by.i.maxmin$lr=='r',], aes(energy.min/1000, energy.max/1000, color=types)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(.~dofs, scales='free') + ylab('max energy diff (kJ)') + xlab('min energy diff (kJ)') + scale_x_log10() + labs(color='Generator') + scale_color_discrete(labels=c('prng', 'halton'))
+  ggsave("discr_min_v_max_energy_1ATN.pdf", q, width=9, height=5)
+  dof_lab <- function(string) {
+    paste("dim:", string)
+  }
+  q <- ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h') & dat.by.i.maxmin$hp %in% c(5, 15, 30),], aes(dist.max, energy.max/1000, color=ltypes)) + geom_density2d() + geom_point(alpha=0.2, size=0.7, aes(fill=ltypes)) + facet_wrap(.~dofs, scales='free_x', labeller=labeller(dofs=dof_lab)) + ylab('max energy dist (kJ)') + xlab('max L2 norm') + labs(color='Generator')
+  print('plotting `discr_dist_energy_1ATN.pdf`, the desired plot')
+  ggsave('discr_dist_energy_1ATN.pdf', q, width=8, height=3)
+  library(dplyr)
+  dat.by.i.maxmin %>% group_by(hp, ltypes) %>% summarize(mean_en=mean(energy), sd_en=sd(energy), mean_max_en=mean(energy.max), sd_max_en=sd(energy.max), mean_dist=mean(dist.9), sd_dist=sd(dist.9), mean_max_dist=mean(dist.max), sd_max_dist=sd(dist.max))
 }
-q <- ggplot(dat.by.i.maxmin[dat.by.i.maxmin$types %in% c('p p', 'h h') & dat.by.i.maxmin$hp %in% c(5, 15, 30),], aes(dist.max, energy.max/1000, color=ltypes)) + geom_density2d() + geom_point(alpha=0.2) + facet_wrap(.~dofs, scales='free_x', labeller=labeller(dofs=dof_lab)) + ylab('max energy dist (kJ)') + xlab('max L2 norm') + labs(color='Generator')
-ggsave('discr_dist_energy_1ATN.pdf', q, width=10, height=4)
-library(dplyr)
-dat.by.i.maxmin %>% group_by(hp, ltypes) %>% summarize(mean_en=mean(energy), sd_en=sd(energy), mean_max_en=mean(energy.max), sd_max_en=sd(energy.max), mean_dist=mean(dist.9), sd_dist=sd(dist.9), mean_max_dist=mean(dist.max), sd_max_dist=sd(dist.max))
 
 
 df_stats <- data.frame(lr=character(), hp=numeric(), type=character(),

@@ -123,6 +123,21 @@ float one_disc(
   return std::abs((float)num_inside / pts.size() - vol(zero, corner, sd) / max_vol);
 }
 
+float relative_dispersion(const std::vector<point> &pts_a, const std::vector<point> &pts_b) {
+  point gminp = pts_a[0], gmaxp = pts_a[0];
+  for (const auto& pa : pts_a) {
+    point minp = pts_b[0], maxp = pts_b[0];
+    for (const auto& pb : pts_b) {
+      minp.e = std::min(pb.e, minp.e);
+      minp.i = std::min(pb.i, minp.i);
+      minp.u = std::min(pb.u, minp.u);
+      maxp.e = std::max(pb.e, maxp.e);
+      maxp.i = std::max(pb.i, maxp.i);
+      maxp.u = std::max(pb.u, maxp.u);
+    }
+  }
+}
+
 float dispersion(const std::vector<point> &pts) {
   // Get the min/max in each direction.
   point minp = pts[0], maxp = pts[0], meanp, stddevp;

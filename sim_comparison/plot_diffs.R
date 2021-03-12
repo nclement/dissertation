@@ -82,6 +82,19 @@ read_prody <- function(pdb, lr, r) {
 }
 read_mine <- function(pdb, lr, stdev=5) {
   fn = paste('hp.5.s',stdev,'-',pdb,'_', lr, '_u-conv.prot_en_ll.txt', sep='')
+  internal_read_mine(pdb, lr, stdev, fn)
+}
+read_lc <- function(pdb, lr, stdev=5) {
+  if (pdb != '1H1V' && pdb != '1F6M') {
+    data.frame(type=character(),pdb=character(),lr=character(),conf=numeric(),crmsd=numeric(),ucrmsd=numeric(),cvc.energy=numeric(),amber.energy=numeric(), density=numeric(), udensity=numeric(), stdev=numeric())
+  } else {
+    fn = paste('lc_hp.5.s',stdev,'-',pdb,'_', lr, '_u-conv.prot_en_ll.txt', sep='')
+    dat <- internal_read_mine(pdb, lr, stdev, fn)
+    dat$type = 'vMRSHD-lc'
+    dat
+  }
+}
+internal_read_mine <- function(pdb, lr, stdev=5, fn) {
   print(paste('vMRSHD: reading from', fn))
   dat.mine <- read.table(fn)
   names(dat.mine) <- c('conf', 'a','b','c', 'crmsd', 'ucrmsd', 'amber.energy', 'cvc.energy')
@@ -90,6 +103,7 @@ read_mine <- function(pdb, lr, stdev=5) {
   dat.mine$lr = lr
   dat.mine$stdev = paste('stdev=', stdev, sep='')
   print(summary(dat.mine))
+
   dat.mine <- dat.mine[dat.mine$conf <= 1000 | dat.mine$conf == 9999,]
   dat.mine <- remove_outliers(dat.mine, 'cvc.energy')
   dat.mine$density = get_density(dat.mine$cvc.energy, dat.mine$crmsd)
@@ -107,7 +121,8 @@ load_dat <- function() {
       dat.mine <- rbind(read_mine(pdb, lr, 1),
                         read_mine(pdb, lr, 5),
                         read_mine(pdb, lr, 50))
-      #dat.mine <- read_mine(pdb, lr, 5)
+      print(paste(' vmrshd-lc'))
+      dat.mine_lc <- read_lc(pdb, lr, 5)
 
       print(paste(' amber'))
       dat.amber <- read_amber(pdb, lr)
@@ -120,7 +135,8 @@ load_dat <- function() {
 
       this.dat <- rbind(dat.amber[,c('type','pdb','lr','conf','crmsd','ucrmsd','cvc.energy','amber.energy', 'density', 'udensity', 'stdev')],
                         dat.prody[,c('type','pdb','lr','conf','crmsd','ucrmsd','cvc.energy','amber.energy', 'density', 'udensity', 'stdev')],
-                        dat.mine [,c('type','pdb','lr','conf','crmsd','ucrmsd','cvc.energy','amber.energy', 'density', 'udensity', 'stdev')])
+                        dat.mine [,c('type','pdb','lr','conf','crmsd','ucrmsd','cvc.energy','amber.energy', 'density', 'udensity', 'stdev')],
+                        dat.mine_lc [,c('type','pdb','lr','conf','crmsd','ucrmsd','cvc.energy','amber.energy', 'density', 'udensity', 'stdev')])
       if (is.null(dat)) {
         dat <- this.dat
       } else {
@@ -212,7 +228,7 @@ plots <- function() {
   datpub <- dat %>% filter(pdb=='1H1V', stdev %in% c('', 'rmsd=5', 'rmsd=50', 'stdev=5', 'stdev=50'))
   my_label_parsed <- function (variable, value) {
     require(plyr)
-    if (variable == "lr") {
+    if (variable == "lr" || variable == 'pdb') {
       return(as.character(value))
     } else {
       llply(as.character(value), function(x) parse(text = x))
@@ -227,14 +243,17 @@ plots <- function() {
                     'ProDy rmsd=5',
                     'ProDy rmsd=50',
                     'vMRSHD stdev=5',
-                    'vMRSHD stdev=50'),
+                    'vMRSHD stdev=50',
+                    'vMRSHD-lc stdev=5'),
                          labels=c(
                     'Amber',
                     'ProDy ~~ rmsd==5',
                     'ProDy ~~ rmsd==50',
                     'vMRSHD ~~ sigma==5',
-                    'vMRSHD ~~ sigma==50'))
+                    'vMRSHD ~~ sigma==50',
+                    'vMRSHD-lc ~~ sigma==5'))
   datpub$label2=paste(datpub$pdb, datpub$lr, sep=': ')
+  datpub$pdb2 = paste('"', datpub$pdb, '"', sep='')
   #q <- datpub %>% filter(pdb=='1H1V', !(dat$conf %in% c(-1, 9999))) %>% ggplot(aes(cvc.energy/1000, crmsd)) + geom_bin2d(bins=50) + facet_wrap(lr~label, scales='free', ncol=5) + scale_fill_distiller(palette = "Spectral", direction=-1, trans='log') + geom_point(dat=datpub[datpub$pdb == '1H1V' & datpub$norm == "original",], aes(cvc.energy/1000, crmsd), pch=4, size=2, stroke=1, col='red') + theme(legend.position = "none") + xlab('Energy (kJ)') + ylab('iRMSD') + scale_x_continuous(n.breaks=4)
   q <- datpub %>% filter(pdb=='1H1V', !(conf %in% c(-1, 9999))) %>% ggplot(aes(cvc.energy/1000, crmsd)) + geom_point(aes(color=density), size=0.5) + facet_wrap(lr~label, scales='free', ncol=5, labeller=label_parsed) + scale_color_distiller(palette = "Spectral", direction=-1, trans='log') + geom_point(dat=datpub[datpub$pdb == '1H1V' & datpub$norm == "original",], aes(cvc.energy/1000, crmsd), pch=4, size=2, stroke=1, col='red') + theme(legend.position = "none") + xlab('Energy (kJ)') + ylab('iRMSD') + scale_x_continuous(n.breaks=4)
   ggsave("1H1V_vs_amber_prody.pdf", q, width=10, height=5)
