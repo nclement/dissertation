@@ -1,0 +1,31 @@
+load 1RKE_r_u.pdb
+load 1RKE_r_u_samp0-0.pdb
+load 1RKE_r_u_samp0-1.pdb
+load 1RKE_r_u_samp0-2.pdb
+load 1RKE_r_u_samp0-3.pdb
+load 1RKE_r_u_samp0-4.pdb
+load 1RKE_r_u_samp0-5.pdb
+load 1RKE_r_u_samp0-6.pdb
+load 1RKE_r_u_samp0-7.pdb
+load 1RKE_r_u_samp0-8.pdb
+load 1RKE_r_u_samp0-9.pdb
+load 1RKE_r_u_samp1-0.pdb
+load 1RKE_r_u_samp1-1.pdb
+load 1RKE_r_u_samp1-2.pdb
+load 1RKE_r_u_samp1-3.pdb
+load 1RKE_r_u_samp1-4.pdb
+load 1RKE_r_u_samp1-5.pdb
+load 1RKE_r_u_samp1-6.pdb
+load 1RKE_r_u_samp1-7.pdb
+load 1RKE_r_u_samp1-8.pdb
+load 1RKE_r_u_samp1-9.pdb
+
+select hinge, resi 165
+select loop, resi 201
+select nonorig, resi 1-164+202-500 and (not 1RKE_r_u)
+select nonloop, resi 1-164+202-500 and 1RKE_r_u
+color red, hinge
+color blue, loop
+hide everything, nonorig
+set cartoon_transparency, 0.6, nonloop
+color grey40, nonloop

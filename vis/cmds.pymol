@@ -1,0 +1,71 @@
+# closed is yelloworange
+# open is purple
+# arrows are closed -> open
+#0.79, 0.86, 0.92
+
+# inorganic pyrophospotase
+# 1K20: S.g PPase, closed
+# 1K23: B.s Ppase, open
+fetch 1K20
+fetch 1K23
+remove 1K20 & chain B+C+D+E
+remove 1K23 & chain B+C+D+E
+remove resn MN
+color yelloworange, 1K20
+color purple, 1K23
+select dom1, resi 1-186
+align 1K20 & dom1, 1K23 & dom1
+modevectors 1K20 & resi 189-307, 1K23 & resi 188-306, skip=3, headrgb=(0.79, 0.86, 0.92), tailrgb=(0.79, 0.86, 0.92)
+show cartoon, 1K23
+
+# ribose binding protein
+# 1BA2: open
+# 1DBP: closed
+#fetch 1URP
+#remove 1URP & chain B+C+D
+fetch 1BA2
+fetch 1DBP
+color yelloworange, 1DBP
+color purple, 1BA2
+remove 1BA2 & chain B+C+D
+remove 1DBP & chain B+C+D
+select domain2, resi 104-235+265-271
+align 1DBP & domain2, 1BA2 & domain2
+modevectors 1DBP, 1BA2, skip=3, headrgb=(0.79, 0.86, 0.92), tailrgb=(0.79, 0.86, 0.92)
+show cartoon, 1BA2
+zoom 1BA2
+
+# adenlyate kinase
+# open: 4AKE
+# closed: 1AKE
+fetch 1AKE
+fetch 4AKE
+remove 4AKE & chain B+C+D
+remove 1AKE & chain B+C+D
+color yelloworange, 1AKE
+color purple, 4AKE
+align 4AKE, 1AKE
+modevectors 1AKE, 4AKE, skip=3, headrgb=(0.79, 0.86, 0.92), tailrgb=(0.79, 0.86, 0.92)
+show cartoon, 4AKE
+zoom 4AKE
+
+# Calmodulin
+# Ca2+-free: 1QX5 (closed)
+# Ca2+-loaded: 1CLL (open)
+fetch 1QX5
+fetch 1CLL
+remove 1QX5 & (not chain B)
+select dom1, resi 93-147
+select middom, resi 65-92
+select dom2, resi 1-64
+select h1, resi 76-80
+color yelloworange, dom1
+color purple, dom2
+color forest, middom
+color red, h1
+
+stored.chains = {}
+iterate 1QX5, stored.chains[chain] = "1QX5 & chain %s" % chain
+print(stored.chains)
+for c in stored.chains.keys(): cmd.create("1QX5_%s" % c, stored.chains[c])
+alignto 1QX5_D
